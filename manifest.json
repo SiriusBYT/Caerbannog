@@ -1,5 +1,5 @@
 {
-  "id": "com.sirio-networK.caerbannog",
+  "id": "com.sirio-network.caerbannog",
   "name": "Caerbannog Compiler",
   "description": "Companion Plugin of the CEBN Compiler. Automatically reloads QuickCSS when CEBN detects a change.",
   "author": {
@@ -16,5 +16,4 @@
   "type": "replugged-plugin",
   "renderer": "CEBN_Plugin.ts",
   "source": "https://github.com/SiriusBYT/Caerbannog",
-  "image": ["https://i.imgur.com/14CNs3a.png?CHANGE-THIS-URL"]
 }
