@@ -11,24 +11,6 @@ importers:
       '@types/node':
         specifier: ^20.14.10
         version: 20.14.10
-      '@typescript-eslint/eslint-plugin':
-        specifier: ^7.15.0
-        version: 7.15.0(@typescript-eslint/parser@7.15.0(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5)
-      '@typescript-eslint/parser':
-        specifier: ^7.15.0
-        version: 7.15.0(eslint@8.57.0)(typescript@5.4.5)
-      eslint:
-        specifier: ^8.57.0
-        version: 8.57.0
-      eslint-config-dmitmel:
-        specifier: github:dmitmel/eslint-config-dmitmel
-        version: https://codeload.github.com/dmitmel/eslint-config-dmitmel/tar.gz/d97129ec35235415c6ae6a42299f55cdbb5d75fd(eslint@8.57.0)
-      eslint-plugin-node:
-        specifier: ^11.1.0
-        version: 11.1.0(eslint@8.57.0)
-      prettier:
-        specifier: ^3.3.2
-        version: 3.3.2
       replugged:
         specifier: ^4.8.1
         version: 4.8.1(@codemirror/view@6.23.0)(@lezer/common@1.2.0)(sass-embedded@1.77.5)
