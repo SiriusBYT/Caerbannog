@@ -5,11 +5,11 @@ const logger = Logger.plugin("Caerbannog");
 export async function start(): Promise<void> {
   const Trinity = new WebSocket("wss://localhost:6701");
   while (true) {
-    Trinity.onopen = function(e) {
+    Trinity.onopen = function() {
       logger.log(`== SN-API == Connection established with Caerbernnog Compiler.`);
       Trinity.onmessage = function(event) {
         replugged.quickCSS.reload();
-      };  
+      };
     };
 
     Trinity.onclose = function(event) {
@@ -23,9 +23,9 @@ export async function start(): Promise<void> {
     Trinity.onerror = function(error) {
       logger.log("== SN-API == Unknown error");
     };
-  }
-}
+  };
+};
 
 export function stop(): void {
   logger.log(`Stopped Caerbannog.`);
-}
+};

@@ -15,5 +15,5 @@
   "license": "TSN License 1.0 - NC + DWA",
   "type": "replugged-plugin",
   "renderer": "CEBN_Plugin.ts",
-  "source": "https://github.com/SiriusBYT/Caerbannog",
+  "source": "https://github.com/SiriusBYT/Caerbannog"
 }
