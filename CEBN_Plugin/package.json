@@ -1,0 +1,23 @@
+{
+  "name": "Caerbannog Compiler",
+  "version": "1.0.0",
+  "description": "Companion Plugin of the CEBN Compiler. Automatically reloads QuickCSS when CEBN detects a change.",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "build": "replugged build plugin",
+    "watch": "replugged build plugin --watch",
+    "bundle": "replugged bundle plugin",
+    "release": "replugged release"
+  },
+  "keywords": [],
+  "author": "Ascellayn",
+  "license": "TSN License 1.0 - NC + DWA",
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "replugged": "^4.8.1",
+    "typescript": "^5.4.5"
+  }
+}
