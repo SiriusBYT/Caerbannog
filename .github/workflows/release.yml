@@ -11,6 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    
+    defaults:
+      run:
+        working-directory: ./CEBN_Plugin
 
     steps:
       - name: Check out Git repository
@@ -24,9 +28,6 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 9
-
-      - name: Change directory
-        run: cd CEBN_Plugin
 
       - name: Install Node.js dependencies
         run: pnpm install
