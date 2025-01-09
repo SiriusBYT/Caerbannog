@@ -36,8 +36,8 @@ jobs:
         run: pnpm run bundle
 
       - uses: ncipollo/release-action@v1
-        working-directory: ./CEBN_Plugin
         with:
+          working-directory: ./CEBN_Plugin
           artifacts: "bundle/*"
           makeLatest: true
           allowUpdates: true
