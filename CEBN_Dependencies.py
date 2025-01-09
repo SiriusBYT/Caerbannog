@@ -24,7 +24,3 @@ def Log(Text: str, Level: int = 20) -> None:
 def Safe_Index(Array: list, Index: int):
 	try: return Array[Index];
 	except: return None;
-
-def Safe_User_Data(Data: dict, User_ID: int) -> dict:
-	try: return Data[str(User_ID)];
-	except: return None;
