@@ -37,8 +37,7 @@ jobs:
 
       - uses: ncipollo/release-action@v1
         with:
-          working-directory: ./CEBN_Plugin
-          artifacts: "bundle/*"
+          artifacts: "CEBN_Plugin/bundle/*"
           makeLatest: true
           allowUpdates: true
           omitBodyDuringUpdate: true
