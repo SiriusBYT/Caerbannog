@@ -25,6 +25,9 @@ jobs:
         with:
           version: 9
 
+      - name: Change directory
+        run: cd CEBN_Plugin
+
       - name: Install Node.js dependencies
         run: pnpm install
 
