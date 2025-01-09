@@ -1,5 +1,7 @@
 *.pyc
 *.env
+*/__pycache__/*
+*/logs/*
 
 ### MERGE OF REPLUGGED PLUGIN GITIGNORE
 # Logs

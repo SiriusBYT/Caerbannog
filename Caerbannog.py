@@ -51,20 +51,20 @@ def WebSocket_Server():
     
     asyncio.run(Websocket_Listener());
 
-def Bootstrap():
+async def Bootstrap():
     global ASK_RELOAD;
     os.system("clear");
     threading.Thread(target=WebSocket_Server).start();
     Log(f'[Caerbannog] Server initialized.');
     try:
         while True: 
-            asyncio.sleep(1);
+            await asyncio.sleep(1);
     except KeyboardInterrupt:
         Shutdown()
 
 # Spark
 if __name__== '__main__': 
-   Bootstrap();
+   asyncio.run(Bootstrap());
 
 def Shutdown():
     Log(f'[System] Shutting down Caerbannog...')
