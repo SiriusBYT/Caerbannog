@@ -3,42 +3,31 @@ import { Logger } from "replugged";
 const logger = Logger.plugin("Caerbannog");
 
 export async function start(): Promise<void> {
-  while (true) {
-    try {
-      let Trinity = new WebSocket("wss://localhost:6701");
-      AddEvents(Trinity);
-    } catch {
-      logger.log(`== SN-API == Failed to connect to the Caerbannog Server. Retrying in 1 second...`);
-      sleep(1000);
-    }
+  await Caerbannog_Client();
+};
+
+async function Caerbannog_Client() {
+  logger.log(`Attempting to connect to the local server...`);
+  let Caerbannog_Server = new WebSocket("ws://localhost:6701");
+
+  Caerbannog_Server.onopen = async function(event) {
+    logger.log(`Connection established with Caerbannog Server.`);
+  };
+  Caerbannog_Server.onmessage = async function(event) {
+    logger.log(`Message "${event.data}" received from the Caerbannog Server. Reloading QuickCSS!`);
+    replugged.quickCSS.reload();
+  };
+  Caerbannog_Server.onclose = async function(event) {
+    logger.log(`Failed to establish connection to the local Caerbannog Server, retrying in 10 seconds...`);
+    await sleep(10000);
+    await Caerbannog_Client();
   };
 };
 
-function AddEvents(Socket: WebSocket) {
-  Socket.addEventListener("open", (event) => {
-    logger.log(`== SN-API == Connection established with Caerbannog Server.`);
-  });
-  Socket.addEventListener("message", (event) => {
-    logger.log(`== SN-API == Message "${event.data}" received from the Caerbannog Server. Reloading QuickCSS!`);
-    replugged.quickCSS.reload();
-  });
-  Socket.addEventListener("error", (event) => {
-    logger.log(`== SN-API == Unknown error`);
-  });
-
-  Socket.addEventListener("close", (event) => {
-    if (event.wasClean) {
-      logger.log(`== SN-API == Connection closed. Code=${event.code} Reason=${event.reason}.`);
-    } else {
-      logger.log("== SN-API == Connection closed forcefully.");
-    };
-  });
-}
-
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
-}
+};
 
 export function stop(): void {
   logger.log(`Stopped Caerbannog.`);
-}
+};

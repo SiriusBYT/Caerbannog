@@ -34,15 +34,20 @@ def WebSocket_Server():
         Client_Address = str(Address[0])+":"+str(Address[1]);
 
         Log(f'[Connection] OK: Web://{Client_Address}.');
-        
-        while True:
+        try:
             if (ASK_RELOAD == True):
                 Log(f'[WS Server] Calling to reload QuickCSS...');
                 try:
                     await Client.send("WAKE UP MOTHERFUCKER");
                     ASK_RELOAD = False;
+                    Log(f'[WS Server] Successfully sent reload request.');
                 except:
-                    Log(f'[WS Server] Error asking to reload QuickCSS.');
+                    Log(f'[WS Server] Error asking to reload QuickCSS. Closing.');
+                    return;
+        except websockets.ConnectionClosed:
+            Log(f'[Connection] CLOSED: Web://{Client_Address}.');
+            break;
+
 
     async def Websocket_Listener():
         Log(f'[WS Server] OK: WebSockets thread started.');
@@ -58,7 +63,8 @@ async def Bootstrap():
     Log(f'[Caerbannog] Server initialized.');
     try:
         while True: 
-            await asyncio.sleep(1);
+            await asyncio.sleep(5);
+            ASK_RELOAD = True;
     except KeyboardInterrupt:
         Shutdown()
 
