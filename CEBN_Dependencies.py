@@ -9,6 +9,9 @@ import os;
 """ Miscellaneous Functions """
 def Void() -> None: return;
 
+def Date_String() -> str:
+	return datetime.datetime.utcnow().strftime("%Y/%m/%d - %H:%M:%S");
+
 def Log(Text: str, Level: int = 20) -> None:
 	mkdir("logs");
 	Logger = logging.getLogger();
@@ -29,6 +32,12 @@ def mkdir(Path: str) -> None: # Shitty code incomin'!
 	try: os.makedirs(Path, exist_ok=True);
 	except: Void();
 	return None;
+
+def ls(Folder: str) -> list:
+    try:
+        Results = next(os.walk(f"{os.getcwd()}/{Folder}"));
+        return [Results[1], Results[2]];
+    except: return [[None], [None]];
 
 def Safe_Index(Array: list, Index: int):
 	try: return Array[Index];

@@ -20,11 +20,11 @@ async function Caerbannog_Client() {
   Caerbannog_Server.onclose = async function(event) {
     logger.log(`Failed to establish connection to the local Caerbannog Server, retrying in 10 seconds...`);
     await sleep(10000);
-    await Caerbannog_Client();
+    await Caerbannog_Client(); // wouldn't this cause hell eventually
   };
 };
 
-function sleep(ms: number) {
+async function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 };
 
