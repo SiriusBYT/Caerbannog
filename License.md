@@ -1,5 +1,6 @@
 # Flashcord © 2023-2025 by Ascellayn (alias SiriusBYT) is licensed under TSN License 1.0 [DC, NC]
 The Sirio Network License 1.0 - Derivable under Conditions, Non-Commercial
+
 *Origin: https://dev.sirio-network.com/license/1.0*
 
 
