@@ -3,6 +3,7 @@
 # Standard Python Libraries
 import datetime;
 import logging;
+import json;
 import sys;
 import os;
 
@@ -25,6 +26,37 @@ def Log(Text: str, Level: int = 20) -> None:
 		handlers = Handlers
 	);
 	Logger.log(Level, Text);
+
+""" General File Processing """
+def JSON_Load(File: str) -> dict:
+	JSON_Exists(File); # If shit hits the fan we should still get an empty dict
+	with open(File, "r", encoding="UTF-8") as JSON:
+		return json.load(JSON);
+	
+def JSON_Write(File: str, Dictionary: dict) -> None:
+	JSON_Exists(File)
+	with open(File, "w", encoding="UTF-8") as JSON:
+		JSON.write(json.dumps(Dictionary, indent=2));
+		return None;
+
+def JSON_Exists(File: str) -> bool:
+	if ('/' in File): # Creates the corresponding folder structure if it doesn't exist.
+		Path_Array = File.split("/");
+		Path = "";
+
+		for Path_Index in range (len(Path_Array)):
+			if (Path_Index >= (len(Path_Array) -1)): break;
+			Path += f"{Path_Array[Path_Index]}/";
+		mkdir(Path)
+
+	if (File_Exists(File) == False):
+		with open(File, "w", encoding="UTF-8") as JSON:
+			JSON.write(json.dumps({}, indent=2));
+			return False;
+	else: return True;
+
+def File_Exists(Path: str) -> bool:
+	return os.path.isfile(Path);
 
 def mkdir(Path: str) -> None: # Shitty code incomin'!
 	if (Path[-1] == '/'):

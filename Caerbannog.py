@@ -19,49 +19,65 @@ import os;
 import re;
 
 """ Global Variables """
-Caerbannog_Version = "Ceres MK.I";
-ASK_RELOAD = False;
+Caerbannog_Version = "Ceres MK.I Rev.1";
+Reload_Status = False;
+Running = True;
+
+Configuration = {};
+
+Clients = [];
+Reload_Completed = [];
 
 """ Websocket Server """
 def WebSocket_Server() -> None:
-    Log(f'[System] INFO: Starting WebSockets Server...');
+    Log(f'[wS Server] Starting WebSockets Server...');
 
     async def Websocket_Handler(Client) -> None:
+        global Clients, Reload_Completed;
         # Make the client connection readable
         Address = Client.remote_address;
         Client_Address = str(Address[0])+":"+str(Address[1]);
 
-        Log(f'[Connection] OK: Web://{Client_Address}.');
+        Log(f'[WS Server] Connection: Web://{Client_Address}.');
         while (True):
-            try:
+            if (Running):
                 try:
-                    if (ASK_RELOAD == True):
-                        await Reload_CSS(Client);
+                    if (Reload_Status == True and Client not in Reload_Completed):
+                        Reload_Result = await Reload_CSS(Client);
+                        if (Reload_Result):
+                            Reload_Completed.append(Client);
+                        else: return;
+                    
+                    if (len(Reload_Completed) == len(Clients)):
+                        Reload_Status = False;
+                        Reload_Completed = []; 
+                
                 except websockets.ConnectionClosed:
                     Log(f'[Connection] CLOSED: Web://{Client_Address}.');
+                    Clients.remove(Client);
                     return;
-            except KeyboardInterrupt:
+            else:
+                Clients.remove(Client);
                 return;
             await asyncio.sleep(0);
 
     async def Websocket_Listener() -> None:
-        Log(f'[WS Server] OK: WebSockets thread started.');
+        Log(f'[WS Server] Listening for WebSockets connections.');
         async with websockets.serve(Websocket_Handler, "127.0.0.1", 6701) as cebn_server:
             await cebn_server.serve_forever();
     
     asyncio.run(Websocket_Listener());
 
 """" Watch Logic """
-async def Reload_CSS(Client) -> None:
-    global ASK_RELOAD;
+async def Reload_CSS(Client) -> bool:
     Log(f'[WS Server] Calling to reload QuickCSS...');
     try:
         await Client.send("WAKE UP MOTHERFUCKER");
-        ASK_RELOAD = False;
         Log(f'[WS Server] Successfully sent reload request.');
+        return True;
     except:
-        Log(f'[WS Server] Error asking to reload QuickCSS. Closing.');
-        return;
+        Log(f'[WS Server] Error asking to reload QuickCSS.');
+        return False;
 
 def Fetch_CSS() -> list:
     CSS_Files = [];
@@ -105,7 +121,7 @@ def Combine_CSS(CSS_Files: list) -> str:
 
 def Compile_CSS(Combined: str) -> str:
     # The Flashcord Compiler will need to be better than this pile of shit!
-    Log(f"Compiling Flashcord...");
+    Log(f"Compiling CSS...");
     Compiled = Combined;
 
     Log(f"Removing Whitespaces at the start of each line...")
@@ -125,18 +141,18 @@ def Root_Options(Options: list) -> str:
     return CSS;
 
 def Finalize_CSS(Compiled: str) -> str:
-    Log(f"Finalizing Flashcord Compilation...");
+    Log(f"Finalizing Caerbannog Compilation...");
 
-    with open(f"License.md", "r", encoding="UTF-8") as LSC:
+    with open(Configuration["License_File"], "r", encoding="UTF-8") as LSC:
         License = LSC.read();
-    with open("config.css", "r", encoding="UTF-8") as CFG:
+    with open(Configuration["Config_CSS"], "r", encoding="UTF-8") as CFG:
         Config_CSS = CFG.read();
 
     Compiler_Notes = f"/* Compiled using Caerbannog {Caerbannog_Version}*/\n"
 
     Root_Footer = [];
     Root_Footer.append(["Caerbannog-Version", Caerbannog_Version]);
-    Root_Footer.append(["Caerbannog_Build", Date_String()]);
+    Root_Footer.append(["Caerbannog-Compile_Date", Date_String()]);
     Root_Footer = Root_Options(Root_Footer);
 
     Compiler_Notes += Root_Footer;
@@ -149,10 +165,10 @@ def Finalize_CSS(Compiled: str) -> str:
 {Compiler_Notes}"
 
     Development = f"\
-/* DEVELOPMENT BUILD */\n\
-{Config_CSS}\n\n\
+/* DEVELOPMENT BUILD */\n\n\
 /* {License} */\n\n\
 {Compiled}\n\n\
+{Config_CSS}\n\n\
 {Compiler_Notes}"
 
     return Production, Development;
@@ -160,7 +176,7 @@ def Finalize_CSS(Compiled: str) -> str:
 class Watchdog_Handler(watchdog.events.FileSystemEventHandler):
     @staticmethod
     def on_any_event(event):
-        global ASK_RELOAD;
+        global Reload_Status;
         Log(f"New recorded event: {event}, triggering recompilation!\n");
 
         Log(f"Fetching CSS...")
@@ -177,49 +193,33 @@ class Watchdog_Handler(watchdog.events.FileSystemEventHandler):
         with open("prod.css", "w", encoding="UTF-8") as Production_CSS:
             Production_CSS.write(Production);
         Log(f"Flashcord has been recompiled.")
-        ASK_RELOAD = True
+        Reload_Status = True
 
 async def Bootstrap() -> None:
+    global Configuration;
     try:
-        try:
-            os.system("clear");
-        except:
-            os.system("cls");
+        Log(f'[Bootstrap] Loading configuration...');
+        Configuration = JSON_Load("Caerbannog.json");
+        Log(f'[Bootstrap] Starting threads...');
         threading.Thread(target=WebSocket_Server).start();
-        Log(f'[Caerbannog] Server initialized.');
+        Log(f'[Bootstrap] Changing Directories...');
         os.chdir("..");
 
-        
+        Log(f'[Bootstrap] Starting Watchdog...');
         Observe_CSS = watchdog.observers.Observer();
-        Observe_CSS.schedule(Watchdog_Handler(), "Flashcord", recursive=True)
+        Observe_CSS.schedule(Watchdog_Handler(), Configuration["Folder"], recursive=True);
         Observe_CSS.start();
-        #while True: await asyncio.sleep(1);
-        """
-        Old_Combined = "";
-        while True:
-            await asyncio.sleep(1);
-            Combined = Combine_CSS(Fetch_CSS());
-            if (Combined != Old_Combined):
-                Old_Combined = Combined;
-                Log(f"Routine Compilation is different! ")
-                Compiled = Compile_CSS(Combined);
-                Production, Development = Finalize_CSS(Compiled);
-                with open("main.css", "w", encoding="UTF-8") as Development_CSS:
-                    Development_CSS.write(Development);
-                with open("prod.css", "w", encoding="UTF-8") as Production_CSS:
-                    Production_CSS.write(Production);
-                Log(f"Flashcord has been recompiled.")
-                ASK_RELOAD = True
-            else:
-                Log(f"ROUTINE: No changes detected.")
-            """
+        Log(f'[Bootstrap] Caerbannog is now ready.');
     except KeyboardInterrupt:
         Shutdown();
 
 def Shutdown() -> None:
-    Log(f'[System] Shutting down Caerbannog...')
+    global Running;
+    Log(f'Shutting down Caerbannog...');
+    Running = False;
     quit();
 
 # Spark
 if __name__== '__main__': 
+   Log(f'[Spark] Starting Caerbannog...');
    asyncio.run(Bootstrap());
