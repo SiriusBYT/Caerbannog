@@ -2,6 +2,7 @@
 The Sirio Network License 1.0 - Freely Derivable, Non-Commercial.  
 *Origin: https://dev.sirio-network.com/license/1.0*  
 
+Last TSN License Revision: 14/01/2025 at 16:41:44
 
 #### DEFINITIONS
 By referring to *"this work"* we are referring to whichever piece of software, image, text or whichever material this license is attempting to protect.  
