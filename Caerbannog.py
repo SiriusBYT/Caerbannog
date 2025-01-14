@@ -30,7 +30,7 @@ def WebSocket_Server() -> None:
     Log(f'[wS Server] Starting WebSockets Server...');
 
     async def Websocket_Handler(Client) -> None:
-        global Clients, Reload_Completed;
+        global Clients, Reload_Completed, Reload_Status;
         # Make the client connection readable
         Address = Client.remote_address;
         Client_Address = str(Address[0])+":"+str(Address[1]);
