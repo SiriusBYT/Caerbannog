@@ -12,6 +12,7 @@ import websockets;
 import threading;
 import watchdog;
 import asyncio;
+import uuid;
 import os;
 import re;
 
@@ -34,6 +35,7 @@ def WebSocket_Server() -> None:
         # Make the client connection readable
         Address = Client.remote_address;
         Client_Address = str(Address[0])+":"+str(Address[1]);
+        Clients.append(Client);
 
         Log(f'[WS Server] Connection: Web://{Client_Address}.');
         while (True):
@@ -48,6 +50,8 @@ def WebSocket_Server() -> None:
                     if (len(Reload_Completed) == len(Clients)):
                         Reload_Status = False;
                         Reload_Completed = []; 
+                
+                    #Log(f"DEBUG: {Reload_Completed}({len(Reload_Completed)}) {Clients}({len(Clients)})")
                 
                 except websockets.ConnectionClosed:
                     Log(f'[Connection] CLOSED: Web://{Client_Address}.');
