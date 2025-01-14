@@ -1,5 +1,5 @@
 # Caerbannog © 2025 by Ascellayn (alias SiriusBYT) is licensed under TSN License 1.0 [FD, NC]
-The Sirio Network License 1.0 - Freely Derivable, Non-Commercial.
+The Sirio Network License 1.0 - Freely Derivable, Non-Commercial.  
 *Origin: https://dev.sirio-network.com/license/1.0*  
 
 
