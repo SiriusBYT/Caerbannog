@@ -32,4 +32,4 @@ Your Repository
 Config.css effectively replaces your QuickCSS, it is ONLY included inside "main.css" and not "prod.css", as Caerbannog is intended to have your QuickCSS folder be sys-linked to whichever theme you are working on.
 
 
-#### Caerbannog © 2025 by Ascellayn (alias SiriusBYT) is licensed under The Sirio Network License 1.0 - [FD, NC]
+#### [Caerbannog © 2025 by Ascellayn (alias SiriusBYT) is licensed under The Sirio Network License 1.0 - [FD, NC]](https://dev.sirio-network.com/license/1.0)
