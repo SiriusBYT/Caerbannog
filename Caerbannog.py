@@ -16,7 +16,7 @@ import os;
 import re;
 
 """ Global Variables """
-Caerbannog_Version = "Ceres MK.I Rev.1";
+Caerbannog_Version = "Ceres MK.I Rev.2";
 Reload_Status = False;
 Running = True;
 
@@ -76,25 +76,17 @@ async def Reload_CSS(Client) -> bool:
         Log(f'[WS Server] Error asking to reload QuickCSS.');
         return False;
 
-def Fetch_CSS() -> list:
+def Fetch_CSS(Folder_Name: str, Config_CSS: str) -> list:
     CSS_Files = [];
-    Blacklisted_Folders = [
-        "Caerbannog",
-        ".",
-        "logs"
-    ]
+    # This will later be added to Caerbannog.json instead of this terrific shit
     Blacklisted_Files = [
-        "main.css",
-        "config.css",
-        "prod.css"
+        Config_CSS
     ]
+    os.chdir(Folder_Name);
     for (Root_Path, Folders, Files) in os.walk(os.getcwd()):
         Continue_Search = True;
         Allow_Append = True;
         Relative_Path = Root_Path.replace(os.getcwd(), "")[1:].replace("\\","/");
-        for BF in Blacklisted_Folders:
-            if (BF in Relative_Path):
-                Continue_Search = False;
         if (Continue_Search):
             #Log(f"Relative_Path: {Relative_Path}\nFolders: {Folders}\nFiles: {Files};");
             for File in Files:
@@ -102,8 +94,9 @@ def Fetch_CSS() -> list:
                     if (File == BF): Allow_Append = False;
                 
                 if ".css" in File and Allow_Append:
-                    CSS_Files.append(f"{Relative_Path}/{File}");
+                    CSS_Files.append(f"{Folder_Name}/{Relative_Path}/{File}");
         else: continue;
+    os.chdir("..");
     return CSS_Files;
 
 
@@ -137,13 +130,13 @@ def Root_Options(Options: list) -> str:
     CSS += "\x7d";
     return CSS;
 
-def Finalize_CSS(Compiled: str) -> str:
+def Finalize_CSS(Compiled: str, Folder_Name: str, Config_CSS: str) -> str:
     Log(f"Finalizing Caerbannog Compilation...");
 
     with open(Configuration["License_File"], "r", encoding="UTF-8") as LSC:
         License = LSC.read();
-    with open(Configuration["Config_CSS"], "r", encoding="UTF-8") as CFG:
-        Config_CSS = CFG.read();
+    with open(f"{Folder_Name}/{Config_CSS}", "r", encoding="UTF-8") as CFG:
+        CFG_CSS = CFG.read();
 
     Compiler_Notes = f"/* Compiled using Caerbannog {Caerbannog_Version}*/\n"
 
@@ -165,50 +158,71 @@ def Finalize_CSS(Compiled: str) -> str:
 /* DEVELOPMENT BUILD */\n\n\
 /* {License} */\n\n\
 {Compiled}\n\n\
-{Config_CSS}\n\n\
+{CFG_CSS}\n\n\
 {Compiler_Notes}"
 
     return Production, Development;
 
 class Watchdog_Handler(watchdog.events.FileSystemEventHandler):
-    @staticmethod
-    def on_any_event(event):
+    def __init__(self, Folder_Name: str, Config_CSS: str, Dev_CSS: str, Prod_CSS: str) -> None:
+        self.Folder_Name = Folder_Name;
+        self.Config_CSS = Config_CSS;
+        self.Dev_CSS = Dev_CSS;
+        self.Prod_CSS = Prod_CSS;
+        Log(f"[{Folder_Name}] Added watchdog with Config_CSS: {Config_CSS}; Dev_CSS: {Dev_CSS}; Prod_CSS: {Prod_CSS}.");
+    
+    def on_any_event(self, event) -> None:
         global Reload_Status;
-        Log(f"New recorded event: {event}, triggering recompilation!\n");
+        Log(f"New recorded event: {event}, triggering recompilation for {self.Folder_Name}!\n");
 
-        Log(f"Fetching CSS...")
-        CSS_Files = Fetch_CSS();
-        Log(f"Combining CSS..")
+        Log(f"[{self.Folder_Name}] Fetching CSS...")
+        CSS_Files = Fetch_CSS(self.Folder_Name, self.Config_CSS);
+        Log(f"[{self.Folder_Name}] Combining CSS..")
         Combined = Combine_CSS(CSS_Files);
-        Log(f"Compiling CSS...")
+        Log(f"[{self.Folder_Name}] Compiling CSS...")
         Compiled = Compile_CSS(Combined);
-        Log(f"Finalizing CSS...")
-        Production, Development = Finalize_CSS(Compiled);
-        Log(f"Writing CSS...")
-        with open("main.css", "w", encoding="UTF-8") as Development_CSS:
+        Log(f"[{self.Folder_Name}] Finalizing CSS...")
+        Production, Development = Finalize_CSS(Compiled, self.Folder_Name, self.Config_CSS);
+        Log(f"[{self.Folder_Name}] Writing CSS...")
+        with open(self.Dev_CSS, "w", encoding="UTF-8") as Development_CSS:
             Development_CSS.write(Development);
-        with open("prod.css", "w", encoding="UTF-8") as Production_CSS:
+        with open(self.Prod_CSS, "w", encoding="UTF-8") as Production_CSS:
             Production_CSS.write(Production);
-        Log(f"Flashcord has been recompiled.")
+        Log(f"{self.Folder_Name} has been recompiled.")
         Reload_Status = True
 
 async def Bootstrap() -> None:
     global Configuration;
-    try:
-        Log(f'[Bootstrap] Loading configuration...');
-        Configuration = JSON_Load("Caerbannog.json");
-        Log(f'[Bootstrap] Starting threads...');
-        threading.Thread(target=WebSocket_Server).start();
-        Log(f'[Bootstrap] Changing Directories...');
-        os.chdir("..");
+    
+    Log(f'[Bootstrap] Loading configuration...');
+    Configuration = JSON_Load("Caerbannog.json");
+    Log(f'[Bootstrap] Starting threads...');
+    #threading.Thread(target=WebSocket_Server).start();
+    Log(f'[Bootstrap] Changing Directories...');
+    os.chdir("..");
 
-        Log(f'[Bootstrap] Starting Watchdog...');
-        Observe_CSS = watchdog.observers.Observer();
-        Observe_CSS.schedule(Watchdog_Handler(), Configuration["Folder"], recursive=True);
-        Observe_CSS.start();
-        Log(f'[Bootstrap] Caerbannog is now ready.');
-    except KeyboardInterrupt:
-        Shutdown();
+    Log(f'[Bootstrap] Starting Watchdog...');
+    Observers = [];
+    Index = -1;
+    for Folder in Configuration["Watchdog"].keys():
+        Index += 1;
+        Folder_Dict = Configuration["Watchdog"][Folder];
+        Observers.append(watchdog.observers.Observer());
+        Observers[Index].schedule(Watchdog_Handler(Folder, Folder_Dict["Config_CSS"], Folder_Dict["Dev_CSS"], Folder_Dict["Prod_CSS"]), Folder, recursive=True);
+        Observers[Index].start();
+
+    """
+    Observe_CSS = watchdog.observers.Observer();
+    Observe_CSS.schedule(Watchdog_Handler(), Configuration["Folder"], recursive=True);
+    Observe_CSS.start();
+    """
+    Log(f'[Bootstrap] Caerbannog is now ready.');
+    while True:
+        try:
+            Void();
+        except KeyboardInterrupt:
+            Shutdown();
+        await asyncio.sleep(1);
 
 def Shutdown() -> None:
     global Running;
