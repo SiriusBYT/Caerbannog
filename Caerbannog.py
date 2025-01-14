@@ -197,7 +197,7 @@ async def Bootstrap() -> None:
     Log(f'[Bootstrap] Loading configuration...');
     Configuration = JSON_Load("Caerbannog.json");
     Log(f'[Bootstrap] Starting threads...');
-    #threading.Thread(target=WebSocket_Server).start();
+    threading.Thread(target=WebSocket_Server).start();
     Log(f'[Bootstrap] Changing Directories...');
     os.chdir("..");
 
