@@ -15,6 +15,7 @@ import asyncio;
 import uuid;
 import os;
 import re;
+import os.path;
 
 """ Global Variables """
 Caerbannog_Version = "Ceres MK.I Rev.2";
@@ -82,25 +83,29 @@ async def Reload_CSS(Client) -> bool:
 
 def Fetch_CSS(Folder_Name: str, Config_CSS: str) -> list:
     CSS_Files = [];
-    # This will later be added to Caerbannog.json instead of this terrific shit
-    Blacklisted_Files = [
-        Config_CSS
-    ]
-    os.chdir(Folder_Name);
-    for (Root_Path, Folders, Files) in os.walk(os.getcwd()):
-        Continue_Search = True;
-        Allow_Append = True;
-        Relative_Path = Root_Path.replace(os.getcwd(), "")[1:].replace("\\","/");
-        if (Continue_Search):
-            #Log(f"Relative_Path: {Relative_Path}\nFolders: {Folders}\nFiles: {Files};");
-            for File in Files:
-                for BF in Blacklisted_Files:
-                    if (File == BF): Allow_Append = False;
+    Blacklisted_Files = [Config_CSS]
+    
+    # Use os.path for cross-platform compatibility
+    folder_path = os.path.abspath(Folder_Name)
+    os.chdir(folder_path)
+    
+    for root, _, files in os.walk(os.getcwd()):
+        allow_append = True
+        # Use os.path.relpath for cross-platform relative paths
+        relative_path = os.path.relpath(root, os.getcwd())
+        if relative_path == '.':
+            relative_path = ''
+            
+        for file in files:
+            if file in Blacklisted_Files:
+                continue
                 
-                if ".css" in File and Allow_Append:
-                    CSS_Files.append(f"{Folder_Name}/{Relative_Path}/{File}");
-        else: continue;
-    os.chdir("..");
+            if file.endswith('.css'):
+                # Use os.path.join for cross-platform path construction
+                css_path = os.path.join(Folder_Name, relative_path, file)
+                CSS_Files.append(os.path.normpath(css_path).replace('\\', '/'))
+                
+    os.chdir('..')
     return CSS_Files;
 
 
@@ -199,21 +204,30 @@ async def Bootstrap() -> None:
     global Configuration;
     
     Log(f'[Bootstrap] Loading configuration...');
-    Configuration = JSON_Load("Caerbannog.json");
+    # Use os.path.join for config file path
+    config_path = os.path.join(os.path.dirname(__file__), "Caerbannog.json")
+    Configuration = JSON_Load(config_path)
+    
     Log(f'[Bootstrap] Starting threads...');
-    threading.Thread(target=WebSocket_Server).start();
+    threading.Thread(target=WebSocket_Server, daemon=True).start();
+    
     Log(f'[Bootstrap] Changing Directories...');
-    os.chdir("..");
+    os.chdir(os.path.dirname(__file__))  # Change to script directory first
+    os.chdir('..')
 
     Log(f'[Bootstrap] Starting Watchdog...');
-    Observers = [];
-    Index = -1;
-    for Folder in Configuration["Watchdog"].keys():
-        Index += 1;
-        Folder_Dict = Configuration["Watchdog"][Folder];
-        Observers.append(watchdog.observers.Observer());
-        Observers[Index].schedule(Watchdog_Handler(Folder, Folder_Dict["Config_CSS"], Folder_Dict["Dev_CSS"], Folder_Dict["Prod_CSS"]), Folder, recursive=True);
-        Observers[Index].start();
+    observers = [];
+    for folder, folder_dict in Configuration["Watchdog"].items():
+        observer = watchdog.observers.Observer();
+        handler = Watchdog_Handler(
+            folder,
+            folder_dict["Config_CSS"],
+            folder_dict["Dev_CSS"],
+            folder_dict["Prod_CSS"]
+        );
+        observer.schedule(handler, folder, recursive=True);
+        observer.start();
+        observers.append(observer);
 
     """
     Observe_CSS = watchdog.observers.Observer();
@@ -221,12 +235,16 @@ async def Bootstrap() -> None:
     Observe_CSS.start();
     """
     Log(f'[Bootstrap] Caerbannog is now ready.');
-    while True:
-        try:
-            Void();
-        except KeyboardInterrupt:
-            Shutdown();
-        await asyncio.sleep(1);
+    try:
+        while True:
+            await asyncio.sleep(1);
+    except KeyboardInterrupt:
+        Log('[Bootstrap] Shutting down observers...');
+        for observer in observers:
+            observer.stop();
+        for observer in observers:
+            observer.join();
+        Shutdown();
 
 def Shutdown() -> None:
     global Running;

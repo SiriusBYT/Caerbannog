@@ -1,33 +1,60 @@
 import { Logger } from "replugged";
 
 const logger = Logger.plugin("Caerbannog");
+const WS_URL = "ws://localhost:6701";
+const RECONNECT_DELAY = 10000;
 
-export async function start(): Promise<void> {
-  await Caerbannog_Client();
-};
+class CaerbannogClient {
+  private ws: WebSocket | null = null;
+  private reconnectTimeout: NodeJS.Timeout | null = null;
+  private isShuttingDown = false;
 
-async function Caerbannog_Client() {
-  logger.log(`Attempting to connect to the local server...`);
-  let Caerbannog_Server = new WebSocket("ws://localhost:6701");
+  connect(): void {
+    if (this.ws?.readyState === WebSocket.CONNECTING) return;
+    
+    this.ws = new WebSocket(WS_URL);
+    
+    this.ws.onopen = () => {
+      logger.log("Connection established with Caerbannog Server");
+    };
 
-  Caerbannog_Server.onopen = async function(event) {
-    logger.log(`Connection established with Caerbannog Server.`);
-  };
-  Caerbannog_Server.onmessage = async function(event) {
-    logger.log(`Message "${event.data}" received from the Caerbannog Server. Reloading QuickCSS!`);
-    replugged.quickCSS.reload();
-  };
-  Caerbannog_Server.onclose = async function(event) {
-    logger.log(`Failed to establish connection to the local Caerbannog Server, retrying in 10 seconds...`);
-    await sleep(10000);
-    await Caerbannog_Client(); // wouldn't this cause hell eventually
-  };
-};
+    this.ws.onmessage = (event) => {
+      logger.log(`Message "${event.data}" received from the Caerbannog Server. Reloading QuickCSS!`);
+      replugged.quickCSS.reload();
+    };
 
-async function sleep(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-};
+    this.ws.onclose = () => {
+      if (this.isShuttingDown) return;
+      
+      logger.log(`Connection lost. Retrying in ${RECONNECT_DELAY/1000} seconds...`);
+      this.reconnectTimeout = setTimeout(() => this.connect(), RECONNECT_DELAY);
+    };
+
+    this.ws.onerror = (error) => {
+      logger.error("WebSocket error:", error);
+    };
+  }
+
+  disconnect(): void {
+    this.isShuttingDown = true;
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+  }
+}
+
+const client = new CaerbannogClient();
+
+export function start(): void {
+  client.connect();
+}
 
 export function stop(): void {
-  logger.log(`Stopped Caerbannog.`);
-};
+  client.disconnect();
+  logger.log("Stopped Caerbannog");
+}
