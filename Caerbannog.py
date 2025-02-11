@@ -17,7 +17,7 @@ import os;
 import re;
 
 """ Global Variables """
-Caerbannog_Version = "Ceres MK.I Rev.2";
+Caerbannog_Version = "Ceres MK.I Rev.3";
 Reload_Status = False;
 Running = True;
 
