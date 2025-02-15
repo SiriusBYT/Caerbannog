@@ -39,7 +39,7 @@ def WebSocket_Server() -> None: # NOTE: This will be later replaced by the new T
         Clients.append(Client);
 
         Log.Info(f'Connection: Web://{Client_Address}.');
-        while (Running):
+        while True:
             try:
                 if (Reload_Status == True and Client not in Reload_Completed):
                     Reload_Result = await Reload_CSS(Client);
@@ -55,14 +55,12 @@ def WebSocket_Server() -> None: # NOTE: This will be later replaced by the new T
             
             except websockets.ConnectionClosed:
                 Log.Info(f'CLOSED: Web://{Client_Address}.');
-                Clients.remove(Client);
-                return;
         Clients.remove(Client);
         return;
 
     async def Websocket_Listener(S_Web: Log.Awaited_Log) -> None:
+        S_Web.OK();
         async with websockets.serve(Websocket_Handler, "127.0.0.1", 6701) as cebn_server:
-            S_Web.OK();
             await cebn_server.serve_forever() 
 
     asyncio.run(Websocket_Listener(S_Web));
@@ -265,8 +263,8 @@ def Shutdown() -> None:
 # Uncomment this for basically debug mode
 """Log.Delete();
 Config.Logging["File"] = True;
-Config.Logging["File_Level"] = 0;
-Config.Logging["Print_Level"] = 0;"""
+Config.Logging["File_Level"] = 10;
+Config.Logging["Print_Level"] = 10;"""
 
 # Spark
 if __name__ == '__main__': 
