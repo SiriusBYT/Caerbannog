@@ -13,8 +13,6 @@ import websockets;
 import threading;
 import watchdog;
 import asyncio;
-import shutil;
-import uuid;
 import os;
 import re;
 
@@ -105,14 +103,13 @@ def Fetch_CSS(Folder_Name: str, Config_CSS: str) -> list:
 
 def Combine_CSS(CSS_Files: list) -> str:
     Combined = "";
-    for File in CSS_Files:
-        with open(File, "r", encoding="UTF-8") as CSS:
-            Combined += "\n" + CSS.read();
+    for CSS_File in CSS_Files:
+        Combined += "\n" + File.Read(CSS_File);
     return Combined;
 
 def Compile_CSS(Combined: str) -> str:
     # The Flashcord Compiler will need to be better than this pile of shit!
-    S_Compile = Log.Debug(f"Compiling CSS...");
+    S_Compile = Log.Info(f"Compiling CSS...");
     Compiled = Combined;
 
     S_RW = Log.Debug(f"Removing Whitespaces at the start of each line...");
