@@ -13,6 +13,7 @@ import websockets;
 import threading;
 import watchdog;
 import asyncio;
+import shutil;
 import uuid;
 import os;
 import re;
@@ -29,17 +30,18 @@ Reload_Completed = [];
 
 """ Websocket Server """
 def WebSocket_Server() -> None: # NOTE: This will be later replaced by the new Trinity code, eventually.
-    S_Web = Log.Info(f'Starting WebSockets Server...');
-
     async def Websocket_Handler(Client) -> None:
         global Clients, Reload_Completed, Reload_Status;
+
         # Make the client connection readable
         Address = Client.remote_address;
         Client_Address = str(Address[0])+":"+str(Address[1]);
         Clients.append(Client);
 
         Log.Info(f'Connection: Web://{Client_Address}.');
-        while True:
+        await Reload_CSS(Client); # Reloads CSS on connection to be sure
+
+        while (Running):
             try:
                 if (Reload_Status == True and Client not in Reload_Completed):
                     Reload_Result = await Reload_CSS(Client);
@@ -50,20 +52,19 @@ def WebSocket_Server() -> None: # NOTE: This will be later replaced by the new T
                 if (len(Reload_Completed) == len(Clients)):
                     Reload_Status = False;
                     Reload_Completed = []; 
-            
-                #Log.Debug(f"{Reload_Completed}({len(Reload_Completed)}) {Clients}({len(Clients)})")
-            
+
             except websockets.ConnectionClosed:
                 Log.Info(f'CLOSED: Web://{Client_Address}.');
-        Clients.remove(Client);
-        return;
+                Clients.remove(Client);
+            await asyncio.sleep(0); # If this line of code isn't present, for some fucking reason it NEVER actually sends the reload message????
 
-    async def Websocket_Listener(S_Web: Log.Awaited_Log) -> None:
-        S_Web.OK();
+    async def Websocket_Listener() -> None:
+        S_Web = Log.Info(f'Starting WebSockets Server...');
         async with websockets.serve(Websocket_Handler, "127.0.0.1", 6701) as cebn_server:
+            S_Web.OK();
             await cebn_server.serve_forever() 
 
-    asyncio.run(Websocket_Listener(S_Web));
+    asyncio.run(Websocket_Listener());
 
 """" Watch Logic """
 async def Reload_CSS(Client) -> bool:
@@ -202,10 +203,8 @@ class Watchdog_Handler(watchdog.events.FileSystemEventHandler):
 
         S_Write = Log.Debug(f"[{self.Folder_Name}] Writing CSS...")
         try:
-            with open(self.Dev_CSS, "w", encoding="UTF-8") as Development_CSS:
-                Development_CSS.write(Development);
-            with open(self.Prod_CSS, "w", encoding="UTF-8") as Production_CSS:
-                Production_CSS.write(Production);
+            File.Write(self.Dev_CSS, Development);
+            File.Write(self.Prod_CSS, Production)
             S_Write.OK();
             Log.Info(f"{self.Folder_Name} has been recompiled.");
         except Exception as Except:
@@ -224,11 +223,9 @@ async def Bootstrap(S_Start: Log.Awaited_Log) -> None:
     Log.Debug(f"Loaded Configuration:\n{Configuration}");
     S_CFG.OK();
 
-    S_Thread = Log.Info(f'Starting threads...');
     WebSockets_Thread = threading.Thread(target=WebSocket_Server);
     WebSockets_Thread.daemon = True;
     WebSockets_Thread.start();
-    S_Thread.OK();
 
     S_Watch = Log.Info(f'Starting Watchdog...');
     os.chdir("..");
