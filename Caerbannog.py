@@ -216,7 +216,7 @@ async def Bootstrap(S_Start: Log.Awaited_Log) -> None:
     global Configuration;
     
     S_CFG = Log.Info(f'Loading configuration...');
-    Configuration = File.JSON_Load("Caerbannog.json");
+    Configuration = File.JSON_Read("Caerbannog.json");
     Log.Debug(f"Loaded Configuration:\n{Configuration}");
     S_CFG.OK();
 
