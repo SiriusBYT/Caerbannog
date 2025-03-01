@@ -1,76 +1,191 @@
-""" General Imports """
+"""
+CEBN Dependencies Module
+Contains utility functions for logging, file operations, and other common tasks.
+"""
 
 # Standard Python Libraries
-import datetime;
-import logging;
-import json;
-import sys;
-import os;
+import datetime
+import logging
+import json
+import sys
+import os
+from typing import Any, List, Tuple, Optional, Dict, Union
 
-""" Miscellaneous Functions """
-def Void() -> None: return;
+"""Miscellaneous Functions"""
 
-def Date_String() -> str:
-	return datetime.datetime.utcnow().strftime("%Y/%m/%d - %H:%M:%S");
+def void() -> None:
+	"""Empty function that does nothing."""
+	return None
 
-def Log(Text: str, Level: int = 20) -> None:
-	mkdir("logs");
-	Logger = logging.getLogger();
-	File_Handler = logging.FileHandler(filename=f"logs/{datetime.datetime.utcnow().strftime("%Y-%m_%d")}.log");
-	Console_Handler = logging.StreamHandler(stream=sys.stdout);
-	Handlers = [File_Handler, Console_Handler]
-	logging.basicConfig(
-		level = 20,
-		format = "[%(asctime)s] - %(levelname)s: %(message)s",
-		datefmt = "%Y/%m/%d - %H:%M:%S",
-		handlers = Handlers
-	);
-	Logger.log(Level, Text);
 
-""" General File Processing """
-def JSON_Load(File: str) -> dict:
-	JSON_Exists(File); # If shit hits the fan we should still get an empty dict
-	with open(File, "r", encoding="UTF-8") as JSON:
-		return json.load(JSON);
+def get_date_string() -> str:
+	"""Returns the current UTC date and time as a formatted string."""
+	return datetime.datetime.utcnow().strftime("%Y/%m/%d - %H:%M:%S")
+
+
+def log(text: str, level: int = logging.INFO) -> None:
+	"""
+	Logs a message to both file and console.
 	
-def JSON_Write(File: str, Dictionary: dict) -> None:
-	JSON_Exists(File)
-	with open(File, "w", encoding="UTF-8") as JSON:
-		JSON.write(json.dumps(Dictionary, indent=2));
-		return None;
+	Args:
+		text: The message to log
+		level: The logging level (default: INFO)
+	"""
+	ensure_directory("logs")
+	
+	# Create logger
+	logger = logging.getLogger()
+	log_filename = os.path.join("logs", f"{datetime.datetime.utcnow().strftime('%Y-%m-%d')}.log")
+	
+	# Create handlers
+	file_handler = logging.FileHandler(filename=log_filename)
+	console_handler = logging.StreamHandler(stream=sys.stdout)
+	
+	# Clear existing handlers to prevent duplicate logging
+	logger.handlers.clear()
+	
+	# Add handlers to logger
+	logger.addHandler(file_handler)
+	logger.addHandler(console_handler)
+	logger.setLevel(logging.INFO)
+	
+	# Create formatter and add to handlers
+	formatter = logging.Formatter(
+		fmt="[%(asctime)s] - %(levelname)s: %(message)s",
+		datefmt="%Y/%m/%d - %H:%M:%S"
+	)
+	file_handler.setFormatter(formatter)
+	console_handler.setFormatter(formatter)
+	
+	# Log the message
+	logger.log(level, text)
 
-def JSON_Exists(File: str) -> bool:
-	if ('/' in File): # Creates the corresponding folder structure if it doesn't exist.
-		Path_Array = File.split("/");
-		Path = "";
 
-		for Path_Index in range (len(Path_Array)):
-			if (Path_Index >= (len(Path_Array) -1)): break;
-			Path += f"{Path_Array[Path_Index]}/";
-		mkdir(Path)
+"""File Operations"""
 
-	if (File_Exists(File) == False):
-		with open(File, "w", encoding="UTF-8") as JSON:
-			JSON.write(json.dumps({}, indent=2));
-			return False;
-	else: return True;
+def load_json(file_path: str) -> Dict[str, Any]:
+	"""
+	Loads a JSON file into a dictionary.
+	Creates the file with an empty dict if it doesn't exist.
+	
+	Args:
+		file_path: Path to the JSON file
+		
+	Returns:
+		Dictionary containing the JSON data
+	"""
+	ensure_json_exists(file_path)  # Create file if it doesn't exist
+	
+	try:
+		with open(file_path, "r", encoding="UTF-8") as json_file:
+			return json.load(json_file)
+	except json.JSONDecodeError:
+		# Return empty dict if file is corrupted
+		return {}
 
-def File_Exists(Path: str) -> bool:
-	return os.path.isfile(Path);
 
-def mkdir(Path: str) -> None: # Shitty code incomin'!
-	if (Path[-1] == '/'):
-		Path = Path[:-1];
-	try: os.makedirs(Path, exist_ok=True);
-	except: Void();
-	return None;
+def write_json(file_path: str, data: Dict[str, Any]) -> None:
+	"""
+	Writes a dictionary to a JSON file.
+	
+	Args:
+		file_path: Path to the JSON file
+		data: Dictionary to write
+	"""
+	ensure_json_exists(file_path)
+	
+	with open(file_path, "w", encoding="UTF-8") as json_file:
+		json.dump(data, json_file, indent=2)
 
-def ls(Folder: str) -> list:
-    try:
-        Results = next(os.walk(f"{os.getcwd()}/{Folder}"));
-        return [Results[1], Results[2]];
-    except: return [[None], [None]];
 
-def Safe_Index(Array: list, Index: int):
-	try: return Array[Index];
-	except: return None;
+def ensure_json_exists(file_path: str) -> bool:
+	"""
+	Ensures a JSON file exists, creating it with an empty dict if needed.
+	Also creates any necessary parent directories.
+	
+	Args:
+		file_path: Path to the JSON file
+		
+	Returns:
+		True if file already existed, False if it was created
+	"""
+	if os.path.sep in file_path:
+		directory = os.path.dirname(file_path)
+		ensure_directory(directory)
+
+	if not file_exists(file_path):
+		with open(file_path, "w", encoding="UTF-8") as json_file:
+			json.dump({}, json_file, indent=2)
+		return False
+	
+	return True
+
+
+def file_exists(path: str) -> bool:
+	"""
+	Checks if a file exists.
+	
+	Args:
+		path: Path to the file
+		
+	Returns:
+		True if the file exists, False otherwise
+	"""
+	return os.path.isfile(path)
+
+
+def ensure_directory(path: str) -> None:
+	"""
+	Creates a directory if it doesn't exist.
+	
+	Args:
+		path: Path to the directory
+	"""
+	try:
+		os.makedirs(path, exist_ok=True)
+	except Exception as e:
+		logging.warning(f"Failed to create directory {path}: {str(e)}")
+
+
+def list_directory(folder: str) -> Tuple[List[str], List[str]]:
+	"""
+	Lists all folders and files in a directory.
+	
+	Args:
+		folder: Path to the directory
+		
+	Returns:
+		Tuple containing (list of folders, list of files)
+	"""
+	try:
+		folder_path = os.path.join(os.getcwd(), folder)
+		folders = []
+		files = []
+		
+		for entry in os.scandir(folder_path):
+			if entry.is_dir():
+				folders.append(entry.name)
+			elif entry.is_file():
+				files.append(entry.name)
+				
+		return folders, files
+	except Exception as e:
+		logging.warning(f"Failed to list directory {folder}: {str(e)}")
+		return [], []
+
+
+def safe_index(array: List[Any], index: int) -> Optional[Any]:
+	"""
+	Safely gets an element from a list without raising IndexError.
+	
+	Args:
+		array: The list to index
+		index: The index to access
+		
+	Returns:
+		The element at the index, or None if index is out of bounds
+	"""
+	try:
+		return array[index]
+	except IndexError:
+		return None
