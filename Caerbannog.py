@@ -181,7 +181,7 @@ class Watchdog_Handler(watchdog.events.FileSystemEventHandler):
         Log(f"[{Folder_Name}] Added watchdog with Config_CSS: {Config_CSS}; Dev_CSS: {Dev_CSS}; Prod_CSS: {Prod_CSS}.");
     
     def on_any_event(self, event) -> None:
-        global Reload_Status;
+        global Reload_Status, Reload_Completed;
         Log(f"New recorded event: {event}, triggering recompilation for {self.Folder_Name}!\n");
 
         Log(f"[{self.Folder_Name}] Fetching CSS...")
@@ -198,7 +198,11 @@ class Watchdog_Handler(watchdog.events.FileSystemEventHandler):
         with open(self.Prod_CSS, "w", encoding="UTF-8") as Production_CSS:
             Production_CSS.write(Production);
         Log(f"{self.Folder_Name} has been recompiled.")
-        Reload_Status = True
+        # This may look stupid but there's a fucking race condition here
+        Reload_Status = False;
+        Reload_Completed = [];
+        Reload_Status = True;
+        
 
 async def Bootstrap() -> None:
     global Configuration;
